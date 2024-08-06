@@ -14,8 +14,6 @@ export default function Navbar({
   isEmployee,
   setIsEmployee
 }) {
-
-
   const handleGoogleAuthClick = () => {
     setShowLogin(true);
   };
@@ -29,7 +27,7 @@ export default function Navbar({
   return (
     <nav className="navbar">
       <h3 className="logo" style={{ display: "flex", alignItems: "center" }}>
-        <img src={Logo} style={{ height: "10px", width: "10px" }} /> ClothePlus
+        <img src={Logo} style={{ height: "40px", width: "40px" }} alt="Logo" /> ClothePlus
       </h3>
       <ul className="nav-menu">
         <li className="nav-item">
@@ -47,27 +45,29 @@ export default function Navbar({
           <a href="#contact">Contact</a>
         </li>
       </ul>
-      {loginStatus ? (
-        <>
-          <p style={{ paddingRight: "9px" }}>Welcome {user}</p>
-          <button className="button-55" onClick={handleLogout}>
-            Logout
+      <div className="auth-section">
+        {loginStatus ? (
+          <>
+            <p className="welcome-message">Welcome {user}</p>
+            <button className="button-55" onClick={handleLogout}>
+              Logout
+            </button>
+          </>
+        ) : showLogin ? (
+          <Login
+            loginStatus={loginStatus}
+            user={user}
+            setLoginStatus={setLoginStatus}
+            setUser={setUser}
+            isEmployee={isEmployee}
+            setIsEmployee={setIsEmployee}
+          />
+        ) : (
+          <button className="button-55" onClick={handleGoogleAuthClick}>
+            Login
           </button>
-        </>
-      ) : showLogin ? (
-        <Login
-          loginStatus={loginStatus}
-          user={user}
-          setLoginStatus={setLoginStatus}
-          setUser={setUser}
-          isEmployee={isEmployee}
-          setIsEmployee={setIsEmployee}
-        />
-      ) : (
-        <button className="button-55" onClick={handleGoogleAuthClick}>
-          Login
-        </button>
-      )}
+        )}
+      </div>
     </nav>
   );
 }

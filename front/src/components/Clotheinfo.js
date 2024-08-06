@@ -1,6 +1,6 @@
 import React from 'react'
 import CustomCarousel from './CustomCarousel';
-
+import ShowCloths from './ShowCloths';
 export default function Clotheinfo({ showLogin, loginStatus, user, isEmployee }) {
   
   const images = [
@@ -25,6 +25,7 @@ export default function Clotheinfo({ showLogin, loginStatus, user, isEmployee })
           <img key={index} src={image.imgURL} alt={image.imgAlt} />
         ))}
       </CustomCarousel>
+      <ShowCloths />
     </div>
   );
 }

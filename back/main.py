@@ -4,11 +4,15 @@ from datetime import datetime
 from flask_cors import CORS
 import os
 from dotenv import load_dotenv
+import base64
+
+# Load environment variables from .env file
 load_dotenv()
+
 app = Flask(__name__)
-CORS(app)
+CORS(app, resources={r"/api/*": {"origins": "http://localhost:3000"}})
 
-
+# MySQL configuration
 app.config['MYSQL_HOST'] = os.getenv("host")
 app.config['MYSQL_USER'] = os.getenv("user")
 app.config['MYSQL_PASSWORD'] = os.getenv("password")
@@ -16,9 +20,62 @@ app.config['MYSQL_DB'] = os.getenv("dbName")
 app.config['MYSQL_CURSORCLASS'] = 'DictCursor'
 
 mysql = MySQL(app)
-CORS(app, resources={r"/api/*": {"origins": "http://localhost:3000"}})
 
-# ************************Rio Taiga(Employee, Customer table)***********************************
+
+@app.route('/upload_folder', methods=['POST'])
+def upload_folder():
+    try:
+        folder_path = request.json.get('folder_path')
+        if not folder_path:
+            return jsonify({"error": "Folder path is required"}), 400
+        
+        # Iterate over all files in the folder
+        for filename in os.listdir(folder_path):
+            if filename.endswith((".png", ".jpg", ".jpeg", ".gif", ".bmp")):  # Add more image formats if needed
+                file_path = os.path.join(folder_path, filename)
+
+                # Open the image file
+                with open(file_path, 'rb') as file:
+                    image_data = file.read()
+
+                # Insert image into the database
+                cursor = mysql.connection.cursor()
+                cursor.execute(''' INSERT INTO Pictures (name, image) VALUES (%s, %s) ''', (filename, image_data))
+                mysql.connection.commit()
+                cursor.close()
+
+        return 'All images uploaded successfully!', 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
+# ************************Picture Gallery************************************
+
+@app.route('/upload', methods=['POST'])
+def upload_picture():
+    try:
+        file = request.files['image']
+        name = file.filename
+        image = file.read()
+        cursor = mysql.connection.cursor()
+        cursor.execute(''' INSERT INTO Pictures (name, image) VALUES (%s, %s) ''', (name, image))
+        mysql.connection.commit()
+        cursor.close()
+        return 'Image uploaded successfully!', 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
+
+@app.route('/pictures', methods=['GET'])
+def get_pictures():
+    try:
+        cursor = mysql.connection.cursor()
+        cursor.execute('SELECT * FROM Pictures LIMIT 2')
+        results = cursor.fetchall()
+        pictures = [{'id': row['id'], 'name': row['name'], 'image': base64.b64encode(row['image']).decode('utf-8')} for row in results]
+        cursor.close()
+        return jsonify(pictures), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+# ************************Employee Management************************************
 
 @app.route('/employee', methods=['POST'])
 def create_employee():
@@ -77,13 +134,14 @@ def update_employee(employee_id):
 def delete_employee(employee_id):
     try:
         cur = mysql.connection.cursor()
-        # Delete employee from database
         cur.execute("DELETE FROM Employees WHERE Employee_ID = %s", (employee_id,))
         mysql.connection.commit()
         cur.close()
         return jsonify({"message": "Employee deleted successfully"}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 400
+
+# ************************Customer Management************************************
 
 @app.route('/customer', methods=['POST'])
 def create_customer():
@@ -153,13 +211,14 @@ def delete_customer(customer_id):
         return jsonify({"message": "Customer deleted successfully"}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 400
-# *****************************************************************************
-# ************************YAR (transaction)************************************
+
+# ************************Transaction Management************************************
+
 @app.route("/transactions", methods=["POST"])
 def add_transaction():
     try:
         data = request.json
-        if not data or 'Transaction_ID' not in data  or 'VIN' not in data or 'Customer_ID' not in data or'Date' not in data or 'Price' not in data or 'Employee_ID' not in data:
+        if not data or 'Transaction_ID' not in data or 'VIN' not in data or 'Customer_ID' not in data or'Date' not in data or 'Price' not in data or 'Employee_ID' not in data:
             return jsonify({'error': 'Missing required fields in request'}), 400
 
         id = data['Transaction_ID']
@@ -174,7 +233,7 @@ def add_transaction():
         cursor = mysql.connection.cursor()
         cursor.execute(
             "INSERT INTO transactions (Transaction_ID, VIN, Customer_ID, Date, Price, Employee_ID) VALUES (%s, %s, %s, %s, %s, %s)",
-            (id, vin,customer_id, date, price, employee_id))
+            (id, vin, customer_id, date, price, employee_id))
         mysql.connection.commit()
 
         return jsonify({'message': 'Transaction created successfully'}), 201
@@ -184,8 +243,6 @@ def add_transaction():
         return jsonify({'error': str(e)}), 500
     finally:
         cursor.close()
-    # read
-
 
 @app.route("/transactions", methods=['GET'])
 def get_transactions():
@@ -198,7 +255,6 @@ def get_transactions():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-
 @app.route("/transactions/<int:Transaction_ID>", methods=['GET'])
 def get_single_transactions(Transaction_ID):
     cursor = mysql.connection.cursor()
@@ -210,8 +266,7 @@ def get_single_transactions(Transaction_ID):
         else:
             return jsonify({'error': 'Transaction not found'}), 404
     except Exception as e:
-        return jsonify({'error': str(e)})
-
+        return jsonify({'error': str(e)}), 500
 
 @app.route("/transactions/<int:Transaction_ID>", methods=['PUT'])
 def update_transaction(Transaction_ID):
@@ -255,38 +310,27 @@ def update_transaction(Transaction_ID):
     except Exception as e:
         mysql.connection.rollback()
         return jsonify({'error': str(e)}), 500
-
     finally:
         cursor.close()
-
 
 @app.route("/transactions/<int:Transaction_ID>", methods=['DELETE'])
 def delete_transaction(Transaction_ID):
     cursor = mysql.connection.cursor()
     try:
-        cursor.execute("""
-            DELETE FROM Transactions
-            WHERE Transaction_ID = %s
-        """, [Transaction_ID])
+        cursor.execute("DELETE FROM Transactions WHERE Transaction_ID = %s", [Transaction_ID])
 
         if cursor.rowcount == 0:
             return jsonify({'error': 'Transaction not found'}), 404
 
         mysql.connection.commit()
         return jsonify({'message': 'Transaction deleted successfully'}), 200
-
     except Exception as e:
         mysql.connection.rollback()
         return jsonify({'error': str(e)}), 500
-
     finally:
         cursor.close()
 
-
-
-# *****************************************************************************
-
-# ************************Eddie (Car, Car_part table)**************************
+# ************************Car Management************************************
 
 @app.route('/cars/<string:car_id>', methods=['GET'])
 def get_one_car(car_id):
@@ -305,7 +349,6 @@ def get_one_car(car_id):
         return jsonify({"error": str(e)}), 400
     finally:
         cursor.close()
-
 
 @app.route('/add/cars', methods=['POST'])
 def create_car():
@@ -332,13 +375,11 @@ def create_car():
     finally:
         cursor.close()
 
-
 @app.route("/update/cars", methods=["PUT"])
 def update_car():
     cursor = mysql.connection.cursor()
     try:
         request_data = request.get_json()
-        # Query database to verify valid VIN
         cursor.execute("SELECT * FROM Cars WHERE VIN = %(VIN)s", request_data)
         returned_data = cursor.fetchone()
         if not returned_data:
@@ -361,7 +402,6 @@ def update_car():
     finally:
         cursor.close()
 
-
 @app.route('/remove/cars/<string:VIN>', methods=['DELETE'])
 def delete_car(VIN):
     cursor = mysql.connection.cursor()
@@ -379,6 +419,8 @@ def delete_car(VIN):
         return jsonify({"error": str(e)}), 400
     finally:
         cursor.close()
+
+# ************************Car Part Management************************************
 
 @app.route('/browse/parts/<part_id>', methods=['GET'])
 def get_part(part_id):
@@ -398,7 +440,6 @@ def get_part(part_id):
         return jsonify({"error": str(e)}), 400
     finally:
         cursor.close()
-
 
 @app.route('/add/parts', methods=['POST'])
 def create_part():
@@ -443,7 +484,6 @@ def update_part():
     finally:
         cursor.close()
 
-
 @app.route('/remove/parts/<int:part_id>', methods=['DELETE'])
 def delete_part(part_id):
     cursor = mysql.connection.cursor()
@@ -461,10 +501,6 @@ def delete_part(part_id):
         return jsonify({"error": str(e)}), 400
     finally:
         cursor.close()
-# *****************************************************************************
-
-
-
 
 if __name__ == "__main__":
     app.run(debug=True)
