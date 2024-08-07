@@ -10,8 +10,7 @@ import base64
 load_dotenv()
 
 app = Flask(__name__)
-CORS(app, resources={r"/api/*": {"origins": "http://localhost:3000"}})
-
+CORS(app, resources={r"/*": {"origins": "http://localhost:3000"}})
 # MySQL configuration
 app.config['MYSQL_HOST'] = os.getenv("host")
 app.config['MYSQL_USER'] = os.getenv("user")
@@ -21,59 +20,6 @@ app.config['MYSQL_CURSORCLASS'] = 'DictCursor'
 
 mysql = MySQL(app)
 
-
-@app.route('/upload_folder', methods=['POST'])
-def upload_folder():
-    try:
-        folder_path = request.json.get('folder_path')
-        if not folder_path:
-            return jsonify({"error": "Folder path is required"}), 400
-        
-        # Iterate over all files in the folder
-        for filename in os.listdir(folder_path):
-            if filename.endswith((".png", ".jpg", ".jpeg", ".gif", ".bmp")):  # Add more image formats if needed
-                file_path = os.path.join(folder_path, filename)
-
-                # Open the image file
-                with open(file_path, 'rb') as file:
-                    image_data = file.read()
-
-                # Insert image into the database
-                cursor = mysql.connection.cursor()
-                cursor.execute(''' INSERT INTO Pictures (name, image) VALUES (%s, %s) ''', (filename, image_data))
-                mysql.connection.commit()
-                cursor.close()
-
-        return 'All images uploaded successfully!', 200
-    except Exception as e:
-        return jsonify({"error": str(e)}), 400
-# ************************Picture Gallery************************************
-
-@app.route('/upload', methods=['POST'])
-def upload_picture():
-    try:
-        file = request.files['image']
-        name = file.filename
-        image = file.read()
-        cursor = mysql.connection.cursor()
-        cursor.execute(''' INSERT INTO Pictures (name, image) VALUES (%s, %s) ''', (name, image))
-        mysql.connection.commit()
-        cursor.close()
-        return 'Image uploaded successfully!', 200
-    except Exception as e:
-        return jsonify({"error": str(e)}), 400
-
-@app.route('/pictures', methods=['GET'])
-def get_pictures():
-    try:
-        cursor = mysql.connection.cursor()
-        cursor.execute('SELECT * FROM Pictures LIMIT 2')
-        results = cursor.fetchall()
-        pictures = [{'id': row['id'], 'name': row['name'], 'image': base64.b64encode(row['image']).decode('utf-8')} for row in results]
-        cursor.close()
-        return jsonify(pictures), 200
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
 
 # ************************Employee Management************************************
 

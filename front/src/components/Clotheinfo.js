@@ -1,6 +1,7 @@
 import React from 'react'
 import CustomCarousel from './CustomCarousel';
-import ShowCloths from './ShowCloths';
+import PictureList from './PictureList';
+import '../stylings/Clotheinfo.css';
 export default function Clotheinfo({ showLogin, loginStatus, user, isEmployee }) {
   
   const images = [
@@ -19,13 +20,20 @@ export default function Clotheinfo({ showLogin, loginStatus, user, isEmployee })
   ];
 
   return (
+    <>      
+    
+    <div>    
+    <CustomCarousel>
+    {images.map((image, index) => (
+      <img key={index} src={image.imgURL} alt={image.imgAlt} />
+    ))}
+  </CustomCarousel></div>
+
     <div>
-      <CustomCarousel>
-        {images.map((image, index) => (
-          <img key={index} src={image.imgURL} alt={image.imgAlt} />
-        ))}
-      </CustomCarousel>
-      <ShowCloths />
+<div className='clothings'>
+<PictureList />
+</div>
     </div>
+    </>
   );
 }
