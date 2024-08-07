@@ -9,7 +9,7 @@ function importAll(r) {
 
 const images = importAll(require.context('../../public/images', false, /\.(png|jpe?g|svg)$/));
 
-const PictureList = ({ pictureIds = [] }) => {
+const PictureList = ({ pictureData = [] }) => {
   const [pictures, setPictures] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [picturesPerPage] = useState(24); // Number of images per page
@@ -21,8 +21,8 @@ const PictureList = ({ pictureIds = [] }) => {
     })));
   }, []);
 
-  // Filter pictures based on pictureIds prop
-  const filteredPictures = pictureIds.length > 0 ? pictures.filter(picture => pictureIds.includes(picture.id)) : pictures;
+  // Filter pictures based on pictureData prop
+  const filteredPictures = pictureData.length > 0 ? pictures.filter(picture => pictureData.some(data => data.item_id === picture.id)) : pictures;
 
   const indexOfLastPicture = currentPage * picturesPerPage;
   const indexOfFirstPicture = indexOfLastPicture - picturesPerPage;
@@ -33,12 +33,17 @@ const PictureList = ({ pictureIds = [] }) => {
   return (
     <div className="picture-list-container">
       <div className="picture-list">
-        {currentPictures.map((picture) => (
-          <div key={picture.id} className="picture-card">
-            <img src={picture.src} alt={picture.id} />
-            
-          </div>
-        ))}
+        {currentPictures.map((picture) => {
+          const pictureInfo = pictureData.find(data => data.item_id === picture.id);
+          return (
+            <div key={picture.id} className="picture-card">
+              <img src={picture.src} alt={picture.id} />
+              <div className="picture-info">
+                {pictureInfo && <p className="picture-score">Score: {pictureInfo.score}</p>}
+              </div>
+            </div>
+          );
+        })}
       </div>
       <div style={{ marginTop: '20px' }}>
         <Pagination

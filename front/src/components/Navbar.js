@@ -1,8 +1,7 @@
 import React, { useState } from "react";
 import "../stylings/Navbar.css";
-import googleImage from "../assets/google.png";
 import Login from "./Login";
-import Logo from "../assets/projicon.png";
+
 
 export default function Navbar({
   showLogin,

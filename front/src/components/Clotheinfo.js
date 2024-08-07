@@ -10,7 +10,7 @@ export default function Clotheinfo({ showLogin, loginStatus, user, isEmployee })
       imgAlt: "Image 1"
     },
     {
-      imgURL: "https://www.telegraph.co.uk/content/dam/men/2022/01/12/Main-image_trans_NvBQzQNjv4Bq2oUEflmHZZHjcYuvN_Gr-bVmXC2g6irFbtWDjolSHWg.jpg?imwidth=680",
+      imgURL: "https://cdn.shopify.com/s/files/1/0594/8519/2376/articles/India_Rose_Creative_Hayden_Hill-306.jpg?v=1642613147",
       imgAlt: "Image 2"
     },
     {

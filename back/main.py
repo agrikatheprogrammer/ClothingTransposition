@@ -1,4 +1,5 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_from_directory
+from werkzeug.utils import secure_filename
 from flask_mysqldb import MySQL
 from datetime import datetime
 from flask_cors import CORS
@@ -8,7 +9,15 @@ import base64
  
 # app.py
 
-
+import logging
+import numpy as np
+from PIL import Image
+import io
+import pinecone
+from pinecone import Pinecone, ServerlessSpec
+from tensorflow.keras.applications import ResNet50
+from tensorflow.keras.preprocessing import image
+from tensorflow.keras.applications.resnet50 import preprocess_input
 
 
 
@@ -26,6 +35,114 @@ app.config['MYSQL_CURSORCLASS'] = 'DictCursor'
 
 mysql = MySQL(app)
 
+# Load pre-trained ResNet50 model
+model = ResNet50(weights='imagenet', include_top=False, pooling='avg')
+
+# Initialize Pinecone
+pc = Pinecone(api_key="bae5afcf-5fa4-4f73-9385-25669089ed7e")
+if 'clothing-recommendation3' not in pc.list_indexes().names():
+    pc.create_index(
+        name="clothing-recommendation3",
+        dimension=2048,  # Replace with your model dimensions
+        metric="cosine",  # Replace with your model metric
+        spec=ServerlessSpec(
+            cloud="aws",
+            region="us-east-1"
+        )
+    )
+index = pc.Index("clothing-recommendation3")
+
+# Define the upload directory (you can adjust this path as needed)
+UPLOAD_DIRECTORY = os.path.join(os.path.dirname(__file__), 'uploads')
+if not os.path.exists(UPLOAD_DIRECTORY):
+    os.makedirs(UPLOAD_DIRECTORY)
+
+@app.route('/upload', methods=['POST'])
+def upload_image():
+    try:
+        if 'file' not in request.files:
+            app.logger.error('No file part in request')
+            return jsonify({'error': 'No file part'}), 400
+        file = request.files['file']
+        if file.filename == '':
+            app.logger.error('No selected file')
+            return jsonify({'error': 'No selected file'}), 400
+        if file:
+            filename = secure_filename(file.filename)
+            filepath = os.path.join(UPLOAD_DIRECTORY, filename)
+            file.save(filepath)
+            
+            # Extract features from the uploaded image
+            features_list = extract_features(filepath)
+            if features_list is not None:
+                query_results = query_pinecone(features_list)
+                if query_results is not None:
+                    similar_items = process_results(query_results)
+                    return jsonify(similar_items)
+                else:
+                    app.logger.error('No results from Pinecone query')
+                    return jsonify({'error': 'No results from Pinecone query'}), 500
+            else:
+                app.logger.error('No features extracted from the image')
+                return jsonify({'error': 'No features extracted from the image'}), 500
+    except Exception as e:
+        app.logger.error(f"Exception in upload_image: {str(e)}")
+        return jsonify({'error': 'Internal Server Error'}), 500
+
+def extract_features(image_path):
+    try:
+        img = Image.open(image_path).resize((224, 224))
+        img_array = image.img_to_array(img)
+        img_array = np.expand_dims(img_array, axis=0)
+        img_array = preprocess_input(img_array)
+        features = model.predict(img_array)
+        
+        # Check the shape and content of the features
+        app.logger.info(f"Features shape: {features.shape}")
+        if features.size == 0:
+            app.logger.error("Empty features array")
+            return None
+        
+        return features.flatten().tolist()
+    except Exception as e:
+        app.logger.error(f"Error extracting features: {str(e)}")
+        return None
+
+
+def query_pinecone(features_list):
+    try:
+        results = index.query(
+            vector=features_list,
+            top_k=10,
+            include_values=False
+        )
+        return results
+    except Exception as e:
+        app.logger.error(f"Error querying Pinecone: {str(e)}")
+        return None
+
+def process_results(results):
+    try:
+        similar_items = []
+        if 'matches' in results:
+            for item in results['matches']:
+                item_id = item['id']
+                score = item['score']
+                similar_items.append({'item_id': item_id, 'score': score})
+        return similar_items
+    except Exception as e:
+        app.logger.error(f"Error processing results: {str(e)}")
+        return []
+
+@app.route('/assets/<path:filename>')
+def serve_image(filename):
+    try:
+        # Update the path to the absolute path for 'assets' folder
+        assets_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../front/public/images'))
+        return send_from_directory(assets_path, filename)
+    except Exception as e:
+        app.logger.error(f"Error serving image: {str(e)}")
+        return jsonify({'error': 'Image not found'}), 404
 
 # ************************Employee Management************************************
 
