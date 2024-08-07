@@ -1,32 +1,14 @@
-import React, { useState } from "react";
-import Navbar from "./components/Navbar";
+import React from "react";
+import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
+import ImageUpload from "./components/ImageUpload";
 import Home from "./components/Home";
-
 function App() {
-
-  const [showLogin, setShowLogin] = useState(false);
-  const [loginStatus, setLoginStatus] = useState(false);
-  const [user, setUser] = useState(null);
-  const [isEmployee, setIsEmployee] = useState(false)
-  //{status && isEmployee ? <Cardash /> : <Home />}
-  // Function to update login status and user type
-
-
+  console.log(process.env.REACT_APP_API_KEY)
   return (
-    <div className="App">
-      <Navbar
-        showLogin={showLogin}
-        setShowLogin={setShowLogin}
-        loginStatus={loginStatus}
-        setLoginStatus={setLoginStatus}
-        user={user}
-        setUser={setUser}
-        isEmployee={isEmployee}
-        setIsEmployee={setIsEmployee}
-      />
-      <Home showLogin={showLogin}loginStatus={loginStatus} user={user} isEmployee={isEmployee}/>
-
-    </div>
+    <Routes>
+      <Route path="/" element={<Home />} />
+      <Route path="/upload" element={<ImageUpload />} />
+    </Routes>
   );
 }
 

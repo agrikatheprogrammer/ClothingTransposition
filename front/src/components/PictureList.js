@@ -3,13 +3,13 @@ import '../stylings/PictureList.css';
 
 function importAll(r) {
   let images = {};
-  r.keys().map((item, index) => { images[item.replace('./', '')] = r(item); });
+  r.keys().map((item) => { images[item.replace('./', '')] = r(item); });
   return images;
 }
 
 const images = importAll(require.context('../../public/images', false, /\.(png|jpe?g|svg)$/));
 
-const PictureList = () => {
+const PictureList = ({ pictureIds = [] }) => {
   const [pictures, setPictures] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [picturesPerPage] = useState(12); // Number of images per page
@@ -21,9 +21,12 @@ const PictureList = () => {
     })));
   }, []);
 
+  // Filter pictures based on pictureIds prop
+  const filteredPictures = pictureIds.length > 0 ? pictures.filter(picture => pictureIds.includes(picture.id)) : pictures;
+
   const indexOfLastPicture = currentPage * picturesPerPage;
   const indexOfFirstPicture = indexOfLastPicture - picturesPerPage;
-  const currentPictures = pictures.slice(indexOfFirstPicture, indexOfLastPicture);
+  const currentPictures = filteredPictures.slice(indexOfFirstPicture, indexOfLastPicture);
 
   const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
@@ -37,13 +40,13 @@ const PictureList = () => {
           </div>
         ))}
       </div>
-      <div style={{marginTop:'20px'}}>
-      <Pagination
-        currentPage={currentPage}
-        picturesPerPage={picturesPerPage}
-        totalPictures={pictures.length}
-        paginate={paginate}
-      />
+      <div style={{ marginTop: '20px' }}>
+        <Pagination
+          currentPage={currentPage}
+          picturesPerPage={picturesPerPage}
+          totalPictures={filteredPictures.length}
+          paginate={paginate}
+        />
       </div>
     </div>
   );

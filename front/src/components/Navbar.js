@@ -31,19 +31,14 @@ export default function Navbar({
       </h3>
       <ul className="nav-menu">
         <li className="nav-item">
-          <a className="bruh" href="#home">
+          <a className="bruh" href="\">
             Home
           </a>
         </li>
         <li className="nav-item">
-          <a href="#about">About</a>
+          <a href="\upload">Upload Image</a>
         </li>
-        <li className="nav-item">
-          <a href="#services">Services</a>
-        </li>
-        <li className="nav-item">
-          <a href="#contact">Contact</a>
-        </li>
+
       </ul>
       <div className="auth-section">
         {loginStatus ? (
