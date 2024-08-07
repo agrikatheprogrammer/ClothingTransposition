@@ -6,7 +6,7 @@ export default function Clotheinfo({ showLogin, loginStatus, user, isEmployee })
   
   const images = [
     {
-      imgURL: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT25ZLwTwMg5r2PisvnjQUHCLMGFSYztfFLlw&s",
+      imgURL: "https://images.pexels.com/photos/996329/pexels-photo-996329.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1",
       imgAlt: "Image 1"
     },
     {
@@ -14,7 +14,7 @@ export default function Clotheinfo({ showLogin, loginStatus, user, isEmployee })
       imgAlt: "Image 2"
     },
     {
-      imgURL: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRg-6NKPbq04AlHWoLTuBDm4J0hu-hTThbBNA&s",
+      imgURL: "https://images.pexels.com/photos/8483487/pexels-photo-8483487.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1",
       imgAlt: "Image 3"
     }
   ];

@@ -4,10 +4,10 @@
     align-items: center;
     padding: 30px;
 
-    background-color: rgb(247, 234, 228);
-    margin-top: 20px;
+    background-color: rgb(255, 255, 255);
+    margin-top: 2px;
     
-    max-width: 70%; /* Set your desired max width here */
+    max-width: 90%; /* Set your desired max width here */
     margin-left: auto;
     margin-right: auto;
     border-radius: 5px;

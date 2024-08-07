@@ -12,7 +12,7 @@ const images = importAll(require.context('../../public/images', false, /\.(png|j
 const PictureList = () => {
   const [pictures, setPictures] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
-  const [picturesPerPage] = useState(10); // Number of images per page
+  const [picturesPerPage] = useState(12); // Number of images per page
 
   useEffect(() => {
     setPictures(Object.keys(images).map(key => ({
@@ -37,7 +37,7 @@ const PictureList = () => {
           </div>
         ))}
       </div>
-      <div style={{marginTop:'5px'}}>
+      <div style={{marginTop:'20px'}}>
       <Pagination
         currentPage={currentPage}
         picturesPerPage={picturesPerPage}
