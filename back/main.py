@@ -5,20 +5,10 @@ from flask_cors import CORS
 import os
 from dotenv import load_dotenv
 import base64
-
+ 
 # app.py
 
-import logging
-from flask import Flask, request, jsonify
-from flask_cors import CORS
-import numpy as np
-from PIL import Image
-import io
-import pinecone
-from pinecone import Pinecone, ServerlessSpec
-from tensorflow.keras.applications import ResNet50
-from tensorflow.keras.preprocessing import image
-from tensorflow.keras.applications.resnet50 import preprocess_input
+
 
 
 

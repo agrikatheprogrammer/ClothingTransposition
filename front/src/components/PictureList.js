@@ -12,7 +12,7 @@ const images = importAll(require.context('../../public/images', false, /\.(png|j
 const PictureList = ({ pictureIds = [] }) => {
   const [pictures, setPictures] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
-  const [picturesPerPage] = useState(12); // Number of images per page
+  const [picturesPerPage] = useState(24); // Number of images per page
 
   useEffect(() => {
     setPictures(Object.keys(images).map(key => ({
@@ -36,7 +36,7 @@ const PictureList = ({ pictureIds = [] }) => {
         {currentPictures.map((picture) => (
           <div key={picture.id} className="picture-card">
             <img src={picture.src} alt={picture.id} />
-            <h3>{picture.id}</h3>
+            
           </div>
         ))}
       </div>
@@ -72,21 +72,21 @@ const Pagination = ({ currentPage, picturesPerPage, totalPictures, paginate }) =
     <nav>
       <ul className="pagination">
         <li className="page-item">
-          <a onClick={() => paginate(1)} href="!#" className="page-link">
+          <button onClick={() => paginate(1)} className="page-link">
             &laquo;
-          </a>
+          </button>
         </li>
         {pageNumbers.map(number => (
           <li key={number} className={`page-item ${number === currentPage ? 'active' : ''}`}>
-            <a onClick={() => paginate(number)} href="!#" className="page-link">
+            <button onClick={() => paginate(number)} className="page-link">
               {number}
-            </a>
+            </button>
           </li>
         ))}
         <li className="page-item">
-          <a onClick={() => paginate(totalPageCount)} href="!#" className="page-link">
+          <button onClick={() => paginate(totalPageCount)} className="page-link">
             &raquo;
-          </a>
+          </button>
         </li>
       </ul>
     </nav>

@@ -9,7 +9,10 @@ const UploadImage = () => {
   const [images, setImages] = useState([]);
   const [submitting, setSubmitting] = useState(false);
   const [pictureIds, setPictureIds] = useState([]);
-
+  const [showLogin, setShowLogin] = useState(false);
+  const [loginStatus, setLoginStatus] = useState(false);
+  const [user, setUser] = useState(null);
+  const [isEmployee, setIsEmployee] = useState(false)
   const handleFileUpload = (files) => {
     const newImages = files.map((file) => file.base64);
     setImages([...images, ...newImages]);
@@ -43,6 +46,16 @@ const UploadImage = () => {
 
   return (
     <div>
+                  <Navbar
+        showLogin={showLogin}
+        setShowLogin={setShowLogin}
+        loginStatus={loginStatus}
+        setLoginStatus={setLoginStatus}
+        user={user}
+        setUser={setUser}
+        isEmployee={isEmployee}
+        setIsEmployee={setIsEmployee}
+      />
     <div className="upload-image-container">
       <h2 className="upload-image-title">Upload Images</h2>
       <div className="file-upload-container">

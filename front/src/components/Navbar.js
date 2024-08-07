@@ -19,15 +19,19 @@ export default function Navbar({
   };
 
   const handleLogout = () => {
+    localStorage.removeItem('username');
+    localStorage.removeItem('userType');
     setLoginStatus(false);
     setUser(null);
+    setIsEmployee(false);
     setShowLogin(false);
+    console.log('User logged out and local storage cleared');
   };
 
   return (
     <nav className="navbar">
       <h3 className="logo" style={{ display: "flex", alignItems: "center" }}>
-        <img src={Logo} style={{ height: "40px", width: "40px" }} alt="Logo" /> ClothePlus
+        ClothePlus
       </h3>
       <ul className="nav-menu">
         <li className="nav-item">
@@ -38,7 +42,6 @@ export default function Navbar({
         <li className="nav-item">
           <a href="\upload">Upload Image</a>
         </li>
-
       </ul>
       <div className="auth-section">
         {loginStatus ? (
