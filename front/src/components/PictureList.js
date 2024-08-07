@@ -3,16 +3,16 @@ import '../stylings/PictureList.css';
 
 function importAll(r) {
   let images = {};
-  r.keys().map((item, index) => { images[item.replace('./', '')] = r(item); });
+  r.keys().map((item) => { images[item.replace('./', '')] = r(item); });
   return images;
 }
 
 const images = importAll(require.context('../../public/images', false, /\.(png|jpe?g|svg)$/));
 
-const PictureList = () => {
+const PictureList = ({ pictureData = [] }) => {
   const [pictures, setPictures] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
-  const [picturesPerPage] = useState(12); // Number of images per page
+  const [picturesPerPage] = useState(24); // Number of images per page
 
   useEffect(() => {
     setPictures(Object.keys(images).map(key => ({
@@ -21,29 +21,37 @@ const PictureList = () => {
     })));
   }, []);
 
+  // Filter pictures based on pictureData prop
+  const filteredPictures = pictureData.length > 0 ? pictures.filter(picture => pictureData.some(data => data.item_id === picture.id)) : pictures;
+
   const indexOfLastPicture = currentPage * picturesPerPage;
   const indexOfFirstPicture = indexOfLastPicture - picturesPerPage;
-  const currentPictures = pictures.slice(indexOfFirstPicture, indexOfLastPicture);
+  const currentPictures = filteredPictures.slice(indexOfFirstPicture, indexOfLastPicture);
 
   const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
   return (
     <div className="picture-list-container">
       <div className="picture-list">
-        {currentPictures.map((picture) => (
-          <div key={picture.id} className="picture-card">
-            <img src={picture.src} alt={picture.id} />
-            <h3>{picture.id}</h3>
-          </div>
-        ))}
+        {currentPictures.map((picture) => {
+          const pictureInfo = pictureData.find(data => data.item_id === picture.id);
+          return (
+            <div key={picture.id} className="picture-card">
+              <img src={picture.src} alt={picture.id} />
+              <div className="picture-info">
+                {pictureInfo && <p className="picture-score">Score: {pictureInfo.score}</p>}
+              </div>
+            </div>
+          );
+        })}
       </div>
-      <div style={{marginTop:'20px'}}>
-      <Pagination
-        currentPage={currentPage}
-        picturesPerPage={picturesPerPage}
-        totalPictures={pictures.length}
-        paginate={paginate}
-      />
+      <div style={{ marginTop: '20px' }}>
+        <Pagination
+          currentPage={currentPage}
+          picturesPerPage={picturesPerPage}
+          totalPictures={filteredPictures.length}
+          paginate={paginate}
+        />
       </div>
     </div>
   );
@@ -69,21 +77,21 @@ const Pagination = ({ currentPage, picturesPerPage, totalPictures, paginate }) =
     <nav>
       <ul className="pagination">
         <li className="page-item">
-          <a onClick={() => paginate(1)} href="!#" className="page-link">
+          <button onClick={() => paginate(1)} className="page-link">
             &laquo;
-          </a>
+          </button>
         </li>
         {pageNumbers.map(number => (
           <li key={number} className={`page-item ${number === currentPage ? 'active' : ''}`}>
-            <a onClick={() => paginate(number)} href="!#" className="page-link">
+            <button onClick={() => paginate(number)} className="page-link">
               {number}
-            </a>
+            </button>
           </li>
         ))}
         <li className="page-item">
-          <a onClick={() => paginate(totalPageCount)} href="!#" className="page-link">
+          <button onClick={() => paginate(totalPageCount)} className="page-link">
             &raquo;
-          </a>
+          </button>
         </li>
       </ul>
     </nav>

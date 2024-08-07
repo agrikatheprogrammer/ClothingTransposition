@@ -12,8 +12,7 @@ import {
   MDBIcon
 } from 'mdb-react-ui-kit';
 
-export default function Login({ loginStatus, user, setLoginStatus, setUser, isEmployee,
-  setIsEmployee}) {
+export default function Login({ loginStatus, user, setLoginStatus, setUser, isEmployee, setIsEmployee }) {
   // Define state variables for username, password, and user type
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -43,6 +42,24 @@ export default function Login({ loginStatus, user, setLoginStatus, setUser, isEm
       })
       .catch(error => console.error('Error fetching customers:', error));
   }, []);
+
+  useEffect(() => {
+    const storedUsername = localStorage.getItem('username');
+    const storedUserType = localStorage.getItem('userType');
+
+    console.log('Checking local storage for user');
+    console.log('Stored Username:', storedUsername);
+    console.log('Stored User Type:', storedUserType);
+
+    if (storedUsername && storedUserType) {
+      console.log('User found in local storage, logging in automatically');
+      setUser(storedUsername);
+      setLoginStatus(true);
+      setIsEmployee(storedUserType === 'employee');
+    } else {
+      console.log('No user found in local storage');
+    }
+  }, [setUser, setLoginStatus, setIsEmployee]);
 
   const handleUsernameChange = (e) => {
     setUsername(e.target.value);
@@ -76,6 +93,9 @@ export default function Login({ loginStatus, user, setLoginStatus, setUser, isEm
     if (userExists) {
       // Login successful
       console.log('Login successful');
+      localStorage.setItem('username', username); // Store the username in local storage
+      localStorage.setItem('userType', isEmployee ? 'employee' : 'customer'); // Store the user type in local storage
+
       if (isEmployee) {
         setEmployeeName(username);
         setUser(username); // Update current user in Navbar component
@@ -93,6 +113,7 @@ export default function Login({ loginStatus, user, setLoginStatus, setUser, isEm
       // You can display an error message to the user if needed
     }
   };
+
   // Render login form if not logged in
   if (!loginStatus && !showSignup) {
     return (
@@ -112,8 +133,8 @@ export default function Login({ loginStatus, user, setLoginStatus, setUser, isEm
             </div>
             <div className="pass">Forget Password?</div>
             <div className="checkboxes">
-              <p> <input type="checkbox" className="employee check-box" checked={isEmployee} onChange={handleEmployeeCheckboxChange} />Employee</p>
-              <p> <input type="checkbox" className="customer check-box" checked={isCustomer} onChange={handleCustomerCheckboxChange} />Customer</p>
+              <p><input type="checkbox" className="employee check-box" checked={isEmployee} onChange={handleEmployeeCheckboxChange} />Employee</p>
+              <p><input type="checkbox" className="customer check-box" checked={isCustomer} onChange={handleCustomerCheckboxChange} />Customer</p>
             </div>
             <input type="submit" value="Login" />
             <div className="signup_link">

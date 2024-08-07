@@ -1,8 +1,7 @@
 import React, { useState } from "react";
 import "../stylings/Navbar.css";
-import googleImage from "../assets/google.png";
 import Login from "./Login";
-import Logo from "../assets/projicon.png";
+
 
 export default function Navbar({
   showLogin,
@@ -19,30 +18,28 @@ export default function Navbar({
   };
 
   const handleLogout = () => {
+    localStorage.removeItem('username');
+    localStorage.removeItem('userType');
     setLoginStatus(false);
     setUser(null);
+    setIsEmployee(false);
     setShowLogin(false);
+    console.log('User logged out and local storage cleared');
   };
 
   return (
     <nav className="navbar">
       <h3 className="logo" style={{ display: "flex", alignItems: "center" }}>
-        <img src={Logo} style={{ height: "40px", width: "40px" }} alt="Logo" /> ClothePlus
+        ClothePlus
       </h3>
       <ul className="nav-menu">
         <li className="nav-item">
-          <a className="bruh" href="#home">
+          <a className="bruh" href="\">
             Home
           </a>
         </li>
         <li className="nav-item">
-          <a href="#about">About</a>
-        </li>
-        <li className="nav-item">
-          <a href="#services">Services</a>
-        </li>
-        <li className="nav-item">
-          <a href="#contact">Contact</a>
+          <a href="\upload">Upload Image</a>
         </li>
       </ul>
       <div className="auth-section">
