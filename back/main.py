@@ -6,27 +6,24 @@ from flask_cors import CORS
 import os
 from dotenv import load_dotenv
 import base64
- 
-# app.py
-
 import logging
 import numpy as np
 from PIL import Image
 import io
 import pinecone
 from pinecone import Pinecone, ServerlessSpec
+
+#image processing
 from tensorflow.keras.applications import ResNet50
 from tensorflow.keras.preprocessing import image
 from tensorflow.keras.applications.resnet50 import preprocess_input
-
-
-
-# Load environment variables from .env file
 load_dotenv()
 
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "http://localhost:3000"}})
-# MySQL configuration
+
+
+# connecting to mysql database
 app.config['MYSQL_HOST'] = os.getenv("host")
 app.config['MYSQL_USER'] = os.getenv("user")
 app.config['MYSQL_PASSWORD'] = os.getenv("password")
@@ -35,16 +32,15 @@ app.config['MYSQL_CURSORCLASS'] = 'DictCursor'
 
 mysql = MySQL(app)
 
-# Load pre-trained ResNet50 model
+# loading the resnet50 model
 model = ResNet50(weights='imagenet', include_top=False, pooling='avg')
 
-# Initialize Pinecone
 pc = Pinecone(api_key="bae5afcf-5fa4-4f73-9385-25669089ed7e")
 if 'clothing-recommendation3' not in pc.list_indexes().names():
     pc.create_index(
         name="clothing-recommendation3",
-        dimension=2048,  # Replace with your model dimensions
-        metric="cosine",  # Replace with your model metric
+        dimension=2048,  
+        metric="cosine",  
         spec=ServerlessSpec(
             cloud="aws",
             region="us-east-1"
@@ -52,7 +48,7 @@ if 'clothing-recommendation3' not in pc.list_indexes().names():
     )
 index = pc.Index("clothing-recommendation3")
 
-# Define the upload directory (you can adjust this path as needed)
+# defining the upload directory
 UPLOAD_DIRECTORY = os.path.join(os.path.dirname(__file__), 'uploads')
 if not os.path.exists(UPLOAD_DIRECTORY):
     os.makedirs(UPLOAD_DIRECTORY)
@@ -72,7 +68,7 @@ def upload_image():
             filepath = os.path.join(UPLOAD_DIRECTORY, filename)
             file.save(filepath)
             
-            # Extract features from the uploaded image
+            # extracting features 
             features_list = extract_features(filepath)
             if features_list is not None:
                 query_results = query_pinecone(features_list)
@@ -137,14 +133,13 @@ def process_results(results):
 @app.route('/assets/<path:filename>')
 def serve_image(filename):
     try:
-        # Update the path to the absolute path for 'assets' folder
         assets_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../front/public/images'))
         return send_from_directory(assets_path, filename)
     except Exception as e:
         app.logger.error(f"Error serving image: {str(e)}")
         return jsonify({'error': 'Image not found'}), 404
 
-# ************************Employee Management************************************
+# Employee section
 
 @app.route('/employee', methods=['POST'])
 def create_employee():
@@ -210,7 +205,7 @@ def delete_employee(employee_id):
     except Exception as e:
         return jsonify({"error": str(e)}), 400
 
-# ************************Customer Management************************************
+# customer section
 
 @app.route('/customer', methods=['POST'])
 def create_customer():
@@ -281,8 +276,7 @@ def delete_customer(customer_id):
     except Exception as e:
         return jsonify({"error": str(e)}), 400
 
-# ************************Transaction Management************************************
-
+#//transactions section
 @app.route("/transactions", methods=["POST"])
 def add_transaction():
     try:
@@ -396,178 +390,6 @@ def delete_transaction(Transaction_ID):
     except Exception as e:
         mysql.connection.rollback()
         return jsonify({'error': str(e)}), 500
-    finally:
-        cursor.close()
-
-# ************************Car Management************************************
-
-@app.route('/cars/<string:car_id>', methods=['GET'])
-def get_one_car(car_id):
-    cursor = mysql.connection.cursor()
-    try:
-        if car_id == "all":
-            cursor.execute("SELECT * FROM Cars")
-            return jsonify(cursor.fetchall()), 200
-        else:
-            cursor.execute("SELECT * FROM Cars WHERE VIN=%s", (car_id,))
-            data = cursor.fetchone()
-            if not data:
-                return jsonify({"Error": "Car ID is invalid"}), 404
-            return jsonify(data), 200
-    except Exception as e:
-        return jsonify({"error": str(e)}), 400
-    finally:
-        cursor.close()
-
-@app.route('/add/cars', methods=['POST'])
-def create_car():
-    cursor = mysql.connection.cursor()
-    try:
-        request_data = request.get_json()
-        cursor.execute("SELECT * FROM Cars WHERE VIN=%(VIN)s", request_data)
-        returned_data = cursor.fetchall()
-        if returned_data:
-            cursor.close()
-            return jsonify({"Error": "Car ID is already existed"}), 400
-        cursor.execute(
-            """INSERT INTO Cars 
-            (VIN, Year_of_manufacturing, Brand, Model, Trim, Mileage, Type, Gas_Type, Price, image_url, Customer_ID) 
-            VALUES 
-            (%(VIN)s, %(Year_of_manufacturing)s, %(Brand)s, %(Model)s, %(Trim)s, %(Mileage)s, %(Type)s, %(Gas_Type)s,
-             %(Price)s, %(image_url)s, %(Customer_ID)s)""",
-            request_data)
-        mysql.connection.commit()
-        return jsonify({"Success": "Car is added"}), 200
-    except Exception as e:
-        mysql.connection.rollback()
-        return jsonify({"error": str(e)}), 400
-    finally:
-        cursor.close()
-
-@app.route("/update/cars", methods=["PUT"])
-def update_car():
-    cursor = mysql.connection.cursor()
-    try:
-        request_data = request.get_json()
-        cursor.execute("SELECT * FROM Cars WHERE VIN = %(VIN)s", request_data)
-        returned_data = cursor.fetchone()
-        if not returned_data:
-            return jsonify({"Error": "Car does not exist"}), 404
-        cursor.execute("SELECT * FROM Customers WHERE Customer_ID = %(Customer_ID)s", request_data)
-        returned_data = cursor.fetchall()
-        if not returned_data:
-            return jsonify({"Error": "Customer does not exist, please add customer before adding car"}), 404
-        cursor.execute(
-            """UPDATE Cars 
-            SET Year_of_manufacturing = %(Year_of_manufacturing)s, Brand = %(Brand)s, Model = %(Model)s, Trim = %(Trim)s, 
-            Mileage = %(Mileage)s, Type = %(Type)s, Gas_Type = %(Gas_Type)s, Price = %(Price)s, image_url = %(image_url)s, 
-            Customer_ID = %(Customer_ID)s WHERE VIN = %(VIN)s""",
-            request_data)
-        mysql.connection.commit()
-        return jsonify({"Success": "Car has been updated"}), 200
-    except Exception as e:
-        mysql.connection.rollback()
-        return jsonify({"Error": str(e)}), 400
-    finally:
-        cursor.close()
-
-@app.route('/remove/cars/<string:VIN>', methods=['DELETE'])
-def delete_car(VIN):
-    cursor = mysql.connection.cursor()
-    try:
-        cursor.execute(""" SELECT * FROM Cars WHERE VIN=%s """, (VIN,))
-        returned_data = cursor.fetchall()
-        if not returned_data:
-            cursor.close()
-            return jsonify({"Error": "Car ID doesn't existed"}), 404
-        cursor.execute(""" DELETE FROM Cars WHERE VIN=%s """, (VIN,))
-        mysql.connection.commit()
-        return jsonify({"Success": "Car is deleted"}), 200
-    except Exception as e:
-        mysql.connection.rollback()
-        return jsonify({"error": str(e)}), 400
-    finally:
-        cursor.close()
-
-# ************************Car Part Management************************************
-
-@app.route('/browse/parts/<part_id>', methods=['GET'])
-def get_part(part_id):
-    cursor = mysql.connection.cursor()
-    try:
-        if part_id == "all":
-            cursor.execute("SELECT * FROM Car_part")
-            parts = cursor.fetchall()
-            return jsonify(parts), 200
-        else:
-            cursor.execute("SELECT * FROM Car_part WHERE Part_ID=%s", (part_id,))
-            data = cursor.fetchone()
-            if not data:
-                return jsonify({"Error": "Part ID is invalid"}), 404
-            return jsonify(data), 200
-    except Exception as e:
-        return jsonify({"error": str(e)}), 400
-    finally:
-        cursor.close()
-
-@app.route('/add/parts', methods=['POST'])
-def create_part():
-    cursor = mysql.connection.cursor()
-    try:
-        request_data = request.get_json()
-        cursor.execute('SELECT * FROM Car_part WHERE Part_ID=%(Part_ID)s', request_data)
-        returned_data = cursor.fetchall()
-        if returned_data:
-            cursor.close()
-            return jsonify({"Error": "Part is already existed"}), 400
-        cursor.execute(
-            """INSERT INTO Car_part (Part_ID, Name, Brand, Fitment, Price) 
-            VALUES (%(Part_ID)s, %(Name)s, %(Brand)s, %(Fitment)s, %(Price)s)""",
-            request_data)
-        mysql.connection.commit()
-        return jsonify({"Success": "Part is added"}), 200
-    except Exception as e:
-        mysql.connection.rollback()
-        return jsonify({"error": str(e)}), 400
-    finally:
-        cursor.close()
-
-@app.route("/update/parts", methods=["PUT"])
-def update_part():
-    cursor = mysql.connection.cursor()
-    try:
-        request_data = request.get_json()
-        cursor.execute("SELECT * FROM Car_part WHERE Part_ID = %(Part_ID)s", request_data)
-        returned_data = cursor.fetchone()
-        if not returned_data:
-            return jsonify({"Error": "Part does not exist"}), 404
-        cursor.execute(
-            """UPDATE Car_part 
-            SET Name = %(Name)s, Brand = %(Brand)s, Fitment = %(Fitment)s, Price = %(Price)s WHERE Part_ID = %(Part_ID)s""",
-            request_data)
-        mysql.connection.commit()
-        return jsonify({"Success": "Part has been updated"}), 200
-    except Exception as e:
-        mysql.connection.rollback()
-        return jsonify({"Error": str(e)}), 400
-    finally:
-        cursor.close()
-
-@app.route('/remove/parts/<int:part_id>', methods=['DELETE'])
-def delete_part(part_id):
-    cursor = mysql.connection.cursor()
-    try:
-        cursor.execute(""" SELECT * FROM Car_part WHERE Part_ID=%s """, (part_id,))
-        returned_data = cursor.fetchall()
-        if not returned_data:
-            cursor.close()
-            return jsonify({"Error": "Part doesn't existed"}), 404
-        cursor.execute(""" DELETE FROM Car_part WHERE Part_ID=%s """, (part_id,))
-        mysql.connection.commit()
-        return jsonify({"Success": "Part is deleted"}), 200
-    except Exception as e:
-        mysql.connection.rollback()
-        return jsonify({"error": str(e)}), 400
     finally:
         cursor.close()
 
